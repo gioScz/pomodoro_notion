@@ -4,42 +4,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         body { 
-            /* Nero Notion Dark Mode */
             background: #191919; color: #D3D3D3; display: flex; 
             justify-content: center; align-items: center; height: 100vh; 
-            margin: 0; font-family: sans-serif; touch-action: none;
-            user-select: none;
+            margin: 0; 
+            /* FONT MONO DI NOTION */
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            touch-action: none; user-select: none;
         }
-        #container { position: relative; width: 300px; height: 300px; cursor: pointer; }
         
-        svg { transform: rotate(-90deg); width: 300px; height: 300px; }
-        .bg { fill: none; stroke: #333; stroke-width: 15; }
+        /* Contenitore Responsive: si adatta alla grandezza del blocco su Notion */
+        #container { 
+            position: relative; 
+            width: 90vmin; /* Prende il 90% dello spazio disponibile */
+            height: 90vmin; 
+            max-width: 300px; /* Non diventa più grande di così */
+            max-height: 300px;
+            cursor: pointer; 
+            transition: opacity 0.2s; 
+        }
+        
+        /* SVG con viewBox permette di scalare il cerchio senza rompere il codice */
+        svg { 
+            transform: rotate(-90deg); 
+            width: 100%; 
+            height: 100%; 
+        }
+        .bg { fill: none; stroke: #37352f; stroke-width: 12; }
         #progress { 
-            fill: none; stroke: #eb5757; /* Rosso stile Notion */
-            stroke-width: 15; 
-            stroke-linecap: round; 
-            transition: stroke-dashoffset 0.3s linear; 
+            fill: none; stroke: #eb5757; 
+            stroke-width: 12; stroke-linecap: round; 
+            transition: stroke-dashoffset 0.3s linear, stroke 0.3s; 
         }
 
         #text-container {
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%); text-align: center;
         }
-        #text { font-size: 3.5rem; font-weight: bold; display: block; }
+        
+        /* Il testo si rimpicciolisce insieme al cerchio */
+        #text { 
+            font-size: 18vmin; 
+            font-weight: 500; /* Leggermente meno bold per stile Mono */
+            display: block; 
+            letter-spacing: -1px; /* Stile tipico dei font Mono numerici */
+        }
+        
+        /* Limite per il testo quando il widget è grande */
+        @media (min-width: 300px) and (min-height: 300px) {
+            #text { font-size: 3.5rem; }
+        }
 
-        /* Animazione Lampeggiante */
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-        .blinking {
-            animation: blink 0.8s linear infinite;
-        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        .blinking { animation: blink 0.6s linear infinite; }
     </style>
 </head>
 <body>
 
 <div id="container">
-    <svg>
+    <svg viewBox="0 0 300 300">
         <circle class="bg" cx="150" cy="150" r="135" />
         <circle id="progress" cx="150" cy="150" r="135" />
     </svg>
@@ -48,9 +70,10 @@
     </div>
 </div>
 
-<audio id="dingSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-ding-1509.mp3" preload="auto"></audio>
+<audio id="dingSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
 <script>
+    // Il JavaScript rimane invariato! La magia del ridimensionamento la fa tutta il CSS.
     const workTime = 25 * 60;
     const chillTime = 5 * 60;
 
@@ -67,7 +90,6 @@
     let totalTime = workTime;
     let timer = null;
     let mode = 'work';
-
     let lastTap = 0;
     let tapTimeout;
 
@@ -75,14 +97,31 @@
         const m = Math.floor(timeLeft / 60);
         const s = timeLeft % 60;
         text.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        
-        const percentage = timeLeft / totalTime;
-        const offset = circumference - (percentage * circumference);
+        const offset = circumference - ((timeLeft / totalTime) * circumference);
         progress.style.strokeDashoffset = offset;
     }
 
+    function startAlert() {
+        text.classList.add('blinking');
+        const playInterval = setInterval(() => {
+            dingSound.play().catch(() => {}); 
+        }, 1000);
+
+        setTimeout(() => {
+            clearInterval(playInterval);
+            stopAlert();
+        }, 10000);
+    }
+
+    function stopAlert() {
+        text.classList.remove('blinking');
+        dingSound.pause();
+        dingSound.currentTime = 0;
+    }
+
     function toggleTimer() {
-        // Se sta lampeggiando, un tap resetta e cambia modalità
+        dingSound.play().then(() => { dingSound.pause(); }).catch(() => {});
+
         if (text.classList.contains('blinking')) {
             stopAlert();
             switchMode();
@@ -92,7 +131,7 @@
         if (timer) {
             clearInterval(timer);
             timer = null;
-            container.style.opacity = "0.6"; 
+            container.style.opacity = "0.5"; 
         } else {
             container.style.opacity = "1";
             timer = setInterval(() => {
@@ -108,38 +147,22 @@
         }
     }
 
-    function startAlert() {
-        text.classList.add('blinking');
-        dingSound.play();
-        // Il suono e il lampeggio si fermano dopo 10 secondi automaticamente
-        setTimeout(() => {
-            stopAlert();
-        }, 10000);
-    }
-
-    function stopAlert() {
-        text.classList.remove('blinking');
-        dingSound.pause();
-        dingSound.currentTime = 0;
-    }
-
     function switchMode() {
-        if (timer) {
-            clearInterval(timer);
-            timer = null;
-        }
-
+        if (timer) { clearInterval(timer); timer = null; }
+        stopAlert();
+        
         if (mode === 'work') {
             mode = 'break';
             timeLeft = chillTime;
             totalTime = chillTime;
-            progress.style.stroke = "#448361"; // Verde stile Notion
+            progress.style.stroke = "#448361"; 
         } else {
             mode = 'work';
             timeLeft = workTime;
             totalTime = workTime;
-            progress.style.stroke = "#eb5757"; // Rosso stile Notion
+            progress.style.stroke = "#eb5757"; 
         }
+        container.style.opacity = "1";
         updateUI();
     }
 
@@ -148,14 +171,12 @@
         const diff = now - lastTap;
 
         if (diff < 300 && diff > 0) {
-            // DOPPIO TAP -> Skip
             clearTimeout(tapTimeout);
-            switchMode();
+            switchMode(); 
         } else {
-            // TAP SINGOLO -> Start/Stop
             tapTimeout = setTimeout(() => {
-                toggleTimer();
-            }, 300);
+                toggleTimer(); 
+            }, 250);
         }
         lastTap = now;
     });
