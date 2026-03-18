@@ -3,27 +3,27 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            background: #191919; color: #D3D3D3; display: flex; 
-            justify-content: center; align-items: center; height: 100vh; 
-            margin: 0; 
-            /* FONT MONO DI NOTION */
+        /* Aggiunto html, body per sicurezza e overflow: hidden */
+        html, body { 
+            background: #191919; color: #D3D3D3; 
+            display: flex; justify-content: center; align-items: center; 
+            width: 100vw; height: 100vh; /* Usa tutto lo spazio dell'embed */
+            margin: 0; padding: 0;
+            overflow: hidden; /* LA MAGIA: Nasconde sempre le barre di scorrimento */
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
             touch-action: none; user-select: none;
         }
         
-        /* Contenitore Responsive: si adatta alla grandezza del blocco su Notion */
+        /* Contenitore Responsive */
         #container { 
             position: relative; 
-            width: 90vmin; /* Prende il 90% dello spazio disponibile */
+            width: 90vmin;  /* 90% della dimensione minore (larghezza o altezza) */
             height: 90vmin; 
-            max-width: 300px; /* Non diventa più grande di così */
-            max-height: 300px;
+            /* Ho rimosso i max-width e max-height in pixel. Ora scala all'infinito! */
             cursor: pointer; 
             transition: opacity 0.2s; 
         }
         
-        /* SVG con viewBox permette di scalare il cerchio senza rompere il codice */
         svg { 
             transform: rotate(-90deg); 
             width: 100%; 
@@ -41,17 +41,11 @@
             transform: translate(-50%, -50%); text-align: center;
         }
         
-        /* Il testo si rimpicciolisce insieme al cerchio */
         #text { 
-            font-size: 18vmin; 
-            font-weight: 500; /* Leggermente meno bold per stile Mono */
+            font-size: 20vmin; /* Ridimensionato usando vmin così cresce e decresce col cerchio */
+            font-weight: 500; 
             display: block; 
-            letter-spacing: -1px; /* Stile tipico dei font Mono numerici */
-        }
-        
-        /* Limite per il testo quando il widget è grande */
-        @media (min-width: 300px) and (min-height: 300px) {
-            #text { font-size: 3.5rem; }
+            letter-spacing: -1px; 
         }
 
         @keyframes blink { 50% { opacity: 0.3; } }
@@ -73,7 +67,7 @@
 <audio id="dingSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
 <script>
-    // Il JavaScript rimane invariato! La magia del ridimensionamento la fa tutta il CSS.
+    // Il JavaScript rimane invariato
     const workTime = 25 * 60;
     const chillTime = 5 * 60;
 
