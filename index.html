@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { 
+            /* Nero Notion Dark Mode */
+            background: #191919; color: #D3D3D3; display: flex; 
+            justify-content: center; align-items: center; height: 100vh; 
+            margin: 0; font-family: sans-serif; touch-action: none;
+            user-select: none;
+        }
+        #container { position: relative; width: 300px; height: 300px; cursor: pointer; }
+        
+        svg { transform: rotate(-90deg); width: 300px; height: 300px; }
+        .bg { fill: none; stroke: #333; stroke-width: 15; }
+        #progress { 
+            fill: none; stroke: #eb5757; /* Rosso stile Notion */
+            stroke-width: 15; 
+            stroke-linecap: round; 
+            transition: stroke-dashoffset 0.3s linear; 
+        }
+
+        #text-container {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); text-align: center;
+        }
+        #text { font-size: 3.5rem; font-weight: bold; display: block; }
+
+        /* Animazione Lampeggiante */
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .blinking {
+            animation: blink 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <svg>
+        <circle class="bg" cx="150" cy="150" r="135" />
+        <circle id="progress" cx="150" cy="150" r="135" />
+    </svg>
+    <div id="text-container">
+        <div id="text">25:00</div>
+    </div>
+</div>
+
+<audio id="dingSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bell-ding-1509.mp3" preload="auto"></audio>
+
+<script>
+    const workTime = 10;//25 * 60;
+    const chillTime = 5;//5 * 60;
+
+    const progress = document.getElementById('progress');
+    const text = document.getElementById('text');
+    const container = document.getElementById('container');
+    const dingSound = document.getElementById('dingSound');
+
+    const radius = 135;
+    const circumference = 2 * Math.PI * radius;
+    progress.style.strokeDasharray = circumference;
+
+    let timeLeft = workTime;
+    let totalTime = workTime;
+    let timer = null;
+    let mode = 'work';
+
+    let lastTap = 0;
+    let tapTimeout;
+
+    function updateUI() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        text.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        
+        const percentage = timeLeft / totalTime;
+        const offset = circumference - (percentage * circumference);
+        progress.style.strokeDashoffset = offset;
+    }
+
+    function toggleTimer() {
+        // Se sta lampeggiando, un tap resetta e cambia modalità
+        if (text.classList.contains('blinking')) {
+            stopAlert();
+            switchMode();
+            return;
+        }
+
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+            container.style.opacity = "0.6"; 
+        } else {
+            container.style.opacity = "1";
+            timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateUI();
+                } else {
+                    clearInterval(timer);
+                    timer = null;
+                    startAlert();
+                }
+            }, 1000);
+        }
+    }
+
+    function startAlert() {
+        text.classList.add('blinking');
+        dingSound.play();
+        // Il suono e il lampeggio si fermano dopo 10 secondi automaticamente
+        setTimeout(() => {
+            stopAlert();
+        }, 10000);
+    }
+
+    function stopAlert() {
+        text.classList.remove('blinking');
+        dingSound.pause();
+        dingSound.currentTime = 0;
+    }
+
+    function switchMode() {
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+
+        if (mode === 'work') {
+            mode = 'break';
+            timeLeft = chillTime;
+            totalTime = chillTime;
+            progress.style.stroke = "#448361"; // Verde stile Notion
+        } else {
+            mode = 'work';
+            timeLeft = workTime;
+            totalTime = workTime;
+            progress.style.stroke = "#eb5757"; // Rosso stile Notion
+        }
+        updateUI();
+    }
+
+    container.addEventListener('pointerdown', (e) => {
+        const now = Date.now();
+        const diff = now - lastTap;
+
+        if (diff < 300 && diff > 0) {
+            // DOPPIO TAP -> Skip
+            clearTimeout(tapTimeout);
+            switchMode();
+        } else {
+            // TAP SINGOLO -> Start/Stop
+            tapTimeout = setTimeout(() => {
+                toggleTimer();
+            }, 300);
+        }
+        lastTap = now;
+    });
+
+    updateUI();
+</script>
+</body>
+</html>
